@@ -1,0 +1,96 @@
+database: clinical_oncology
+description: |
+  Synthetic oncology EHR data modeled after Cerner/Epic. Hospital operational
+  data for analyst-style Q&A: encounters, diagnoses, meds, labs, readmissions.
+
+tables:
+  patients:
+    description: Patient demographics. Contains PHI.
+    columns:
+      - {name: patient_id, type: VARCHAR, description: Primary key.}
+      - {name: mrn, type: VARCHAR, description: Medical record number. PHI.}
+      - {name: first_name, type: VARCHAR, description: PHI.}
+      - {name: last_name, type: VARCHAR, description: PHI.}
+      - {name: date_of_birth, type: DATE, description: PHI. Use AGE() for queries.}
+      - {name: sex, type: VARCHAR, description: "M or F."}
+      - {name: race, type: VARCHAR}
+      - {name: ethnicity, type: VARCHAR}
+      - {name: zip_code, type: VARCHAR, description: PHI when combined with other fields.}
+      - {name: deceased, type: BOOLEAN}
+      - {name: death_date, type: DATE}
+
+  providers:
+    description: Treating providers.
+    columns:
+      - {name: provider_id, type: VARCHAR, description: Primary key.}
+      - {name: npi, type: VARCHAR, description: National Provider Identifier.}
+      - {name: name, type: VARCHAR}
+      - {name: department, type: VARCHAR, description: "e.g., Oncology, Hematology"}
+      - {name: specialty, type: VARCHAR}
+
+  encounters:
+    description: Hospital encounters (admissions, outpatient visits, ED).
+    columns:
+      - {name: encounter_id, type: VARCHAR, description: Primary key.}
+      - {name: patient_id, type: VARCHAR, description: FK → patients.}
+      - {name: provider_id, type: VARCHAR, description: FK → providers.}
+      - {name: encounter_type, type: VARCHAR, description: "Inpatient | Outpatient | Emergency | Observation"}
+      - {name: department, type: VARCHAR}
+      - {name: admit_datetime, type: TIMESTAMP}
+      - {name: discharge_datetime, type: TIMESTAMP}
+      - {name: length_of_stay_days, type: INTEGER}
+      - {name: discharge_disposition, type: VARCHAR, description: "Home | SNF | Hospice | Expired | AMA"}
+
+  diagnoses:
+    description: ICD-10 diagnoses per encounter. C-codes are cancer (oncology).
+    columns:
+      - {name: diagnosis_id, type: VARCHAR, description: Primary key.}
+      - {name: encounter_id, type: VARCHAR, description: FK → encounters.}
+      - {name: patient_id, type: VARCHAR, description: FK → patients.}
+      - {name: icd10_code, type: VARCHAR, description: "ICD-10. C50.* = breast, C34.* = lung, etc."}
+      - {name: description, type: VARCHAR}
+      - {name: is_primary, type: BOOLEAN, description: True for primary dx of encounter.}
+      - {name: diagnosed_date, type: DATE}
+
+  medications:
+    description: Medications administered/prescribed per encounter.
+    columns:
+      - {name: medication_id, type: VARCHAR, description: Primary key.}
+      - {name: encounter_id, type: VARCHAR, description: FK → encounters.}
+      - {name: patient_id, type: VARCHAR, description: FK → patients.}
+      - {name: drug_name, type: VARCHAR}
+      - {name: drug_class, type: VARCHAR, description: "Chemotherapy | Supportive Care"}
+      - {name: dose_mg, type: DOUBLE}
+      - {name: route, type: VARCHAR, description: "IV | PO | SC"}
+      - {name: start_date, type: DATE}
+      - {name: end_date, type: DATE}
+
+  lab_results:
+    description: Lab results per encounter.
+    columns:
+      - {name: lab_result_id, type: VARCHAR, description: Primary key.}
+      - {name: encounter_id, type: VARCHAR, description: FK → encounters.}
+      - {name: patient_id, type: VARCHAR, description: FK → patients.}
+      - {name: test_name, type: VARCHAR, description: "WBC, HGB, PLT, ANC, CREATININE, ALT"}
+      - {name: value_numeric, type: DOUBLE}
+      - {name: unit, type: VARCHAR}
+      - {name: reference_low, type: DOUBLE}
+      - {name: reference_high, type: DOUBLE}
+      - {name: abnormal_flag, type: VARCHAR, description: "L | H | N"}
+      - {name: collected_datetime, type: TIMESTAMP}
+
+  readmissions:
+    description: Precomputed 30-day readmission flag per inpatient encounter.
+    columns:
+      - {name: encounter_id, type: VARCHAR, description: FK → encounters.}
+      - {name: patient_id, type: VARCHAR, description: FK → patients.}
+      - {name: discharge_datetime, type: TIMESTAMP}
+      - {name: days_to_readmit, type: INTEGER, description: Null if no subsequent admit.}
+      - {name: readmitted_30d, type: BOOLEAN}
+
+common_joins:
+  - patients.patient_id = encounters.patient_id
+  - encounters.encounter_id = diagnoses.encounter_id
+  - encounters.encounter_id = medications.encounter_id
+  - encounters.encounter_id = lab_results.encounter_id
+  - encounters.encounter_id = readmissions.encounter_id

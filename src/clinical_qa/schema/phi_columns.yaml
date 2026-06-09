@@ -1,0 +1,16 @@
+phi_columns:
+  patients:
+    - mrn
+    - first_name
+    - last_name
+    - date_of_birth
+    - zip_code
+  providers:
+    - npi
+forbidden_in_select:
+  - mrn
+  - first_name
+  - last_name
+mask_strategy:
+  date_of_birth: year_only
+  zip_code: first_three_digits

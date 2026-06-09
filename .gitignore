@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+data/synthea/*.csv
+data/synthea/*.csv.zip
+data/*.duckdb
+audit.jsonl
+*.egg-info/
+.DS_Store
+.streamlit/
